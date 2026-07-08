@@ -1,0 +1,15 @@
+{
+  "flow": {
+    "collector_id": "central-collector",
+    "relay_id": "telemetry-relay",
+    "auditor_id": "egress-auditor",
+    "auditor_required_fips_modes": ["strict"],
+    "sanitizers_by_state": {
+      "steady": ["content-sanitizer", "payload-redactor"],
+      "containment": ["content-sanitizer", "payload-redactor"],
+      "eradication": ["content-sanitizer"]
+    },
+    "protected_zones": ["regulated"],
+    "warning_utilization": 0.8
+  }
+}

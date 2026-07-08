@@ -1,0 +1,13 @@
+{
+  "profile_id": "legacy-bare-metal-a",
+  "bundle_name": "legacy-waiver",
+  "selected_components": [
+    "inline-blocker",
+    "memory-snapshotter",
+    "central-collector"
+  ],
+  "data_path": [
+    "central-collector"
+  ],
+  "approvals": ["APP-2026-0715-A"]
+}

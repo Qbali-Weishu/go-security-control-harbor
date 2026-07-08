@@ -1,0 +1,20 @@
+{
+  "profile_id": "regulated-container-host-a",
+  "bundle_name": "regulated-wrong-order",
+  "selected_components": [
+    "kernel-trace-sensor",
+    "attestation-seal",
+    "content-sanitizer",
+    "central-collector",
+    "telemetry-relay",
+    "egress-auditor"
+  ],
+  "data_path": [
+    "kernel-trace-sensor",
+    "central-collector",
+    "content-sanitizer",
+    "telemetry-relay",
+    "egress-auditor"
+  ],
+  "approvals": []
+}

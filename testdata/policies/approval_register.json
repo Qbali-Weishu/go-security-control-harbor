@@ -1,0 +1,48 @@
+{
+  "approvals": [
+    {
+      "ticket_id": "APP-2026-0715-A",
+      "rule_code": "kernel_hook_contention",
+      "components": ["inline-blocker", "memory-snapshotter"],
+      "profile_ids": ["legacy-bare-metal-a"],
+      "zones": ["internal"],
+      "incident_states": ["containment"],
+      "egress_modes": ["direct"],
+      "fips_modes": ["balanced"],
+      "expires_at": "2026-07-15T18:00:00Z"
+    },
+    {
+      "ticket_id": "APP-2026-0701-A",
+      "rule_code": "kernel_hook_contention",
+      "components": ["inline-blocker", "memory-snapshotter"],
+      "profile_ids": ["legacy-bare-metal-a"],
+      "zones": ["internal"],
+      "incident_states": ["containment"],
+      "egress_modes": ["direct"],
+      "fips_modes": ["balanced"],
+      "expires_at": "2026-07-01T00:00:00Z"
+    },
+    {
+      "ticket_id": "APP-2026-0630-A",
+      "rule_code": "kernel_hook_contention",
+      "components": ["inline-blocker", "memory-snapshotter"],
+      "profile_ids": ["legacy-bare-metal-a"],
+      "zones": ["internal"],
+      "incident_states": ["containment"],
+      "egress_modes": ["direct"],
+      "fips_modes": ["balanced"],
+      "expires_at": "2026-06-30T18:00:00Z"
+    },
+    {
+      "ticket_id": "APP-2026-0715-B",
+      "rule_code": "kernel_hook_contention",
+      "components": ["inline-blocker", "memory-snapshotter"],
+      "profile_ids": ["legacy-bare-metal-a", "legacy-bare-metal-strict-a"],
+      "zones": ["internal"],
+      "incident_states": ["containment"],
+      "egress_modes": ["direct"],
+      "fips_modes": ["balanced"],
+      "expires_at": "2026-07-15T18:00:00Z"
+    }
+  ]
+}

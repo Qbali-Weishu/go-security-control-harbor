@@ -1,0 +1,159 @@
+{
+  "components": [
+    {
+      "id": "kernel-trace-sensor",
+      "class": "sensor",
+      "roles": ["raw_payload_emitter", "kernel_hook"],
+      "raw_payload": true,
+      "supported_os": ["linux"],
+      "supported_runtimes": ["bare_metal", "container_host", "isolated_vm"],
+      "kernel_ranges": [{"min": "5.4.0", "max_exclusive": "6.3.0"}],
+      "overhead": {"cpu_milli": 320, "memory_mb": 280, "hook_units": 6},
+      "requires": [
+        {
+          "id": "attestation-seal",
+          "reason": "secure boot profiles require attested boot evidence before kernel telemetry can be trusted",
+          "when": {"secure_boot": true}
+        },
+        {
+          "id": "telemetry-relay",
+          "reason": "restricted egress profiles must relay outbound telemetry through the approved relay hop",
+          "when": {"egress_modes": ["restricted"]}
+        }
+      ],
+      "requires_any": [
+        {
+          "ids": ["content-sanitizer", "payload-redactor"],
+          "reason": "regulated raw payload streams must include an accepted sanitizer before collection",
+          "when": {"zones": ["regulated"], "require_raw_payload": true}
+        }
+      ],
+      "conflicts": []
+    },
+    {
+      "id": "inline-blocker",
+      "class": "enforcement",
+      "roles": ["kernel_hook"],
+      "raw_payload": false,
+      "supported_os": ["linux"],
+      "supported_runtimes": ["bare_metal", "container_host", "isolated_vm"],
+      "kernel_ranges": [{"min": "5.10.0", "max_exclusive": "6.2.0"}],
+      "overhead": {"cpu_milli": 420, "memory_mb": 180, "hook_units": 5},
+      "requires": [],
+      "requires_any": [],
+      "conflicts": []
+    },
+    {
+      "id": "memory-snapshotter",
+      "class": "forensics",
+      "roles": ["kernel_hook", "snapshot"],
+      "raw_payload": false,
+      "supported_os": ["linux"],
+      "supported_runtimes": ["bare_metal", "isolated_vm"],
+      "kernel_ranges": [{"min": "5.10.0", "max_exclusive": "6.0.0"}],
+      "overhead": {"cpu_milli": 280, "memory_mb": 900, "hook_units": 4},
+      "requires": [],
+      "requires_any": [],
+      "conflicts": [
+        {
+          "id": "inline-blocker",
+          "code": "kernel_hook_contention",
+          "message": "memory-snapshotter and inline-blocker cannot share older hook stacks outside isolated VM mode",
+          "waivable": true,
+          "when": {"kernel_lt": "5.15.0", "runtimes": ["bare_metal", "container_host"]}
+        }
+      ]
+    },
+    {
+      "id": "payload-redactor",
+      "class": "sanitizer",
+      "roles": ["sanitizer"],
+      "raw_payload": false,
+      "supported_os": ["linux"],
+      "supported_runtimes": ["bare_metal", "container_host", "isolated_vm"],
+      "kernel_ranges": [],
+      "overhead": {"cpu_milli": 120, "memory_mb": 160, "hook_units": 0},
+      "requires": [],
+      "requires_any": [],
+      "conflicts": []
+    },
+    {
+      "id": "content-sanitizer",
+      "class": "sanitizer",
+      "roles": ["sanitizer"],
+      "raw_payload": false,
+      "supported_os": ["linux"],
+      "supported_runtimes": ["bare_metal", "container_host", "isolated_vm"],
+      "kernel_ranges": [],
+      "overhead": {"cpu_milli": 160, "memory_mb": 220, "hook_units": 0},
+      "requires": [],
+      "requires_any": [],
+      "conflicts": []
+    },
+    {
+      "id": "central-collector",
+      "class": "collector",
+      "roles": ["collector"],
+      "raw_payload": false,
+      "supported_os": ["linux"],
+      "supported_runtimes": ["bare_metal", "container_host", "isolated_vm"],
+      "kernel_ranges": [],
+      "overhead": {"cpu_milli": 200, "memory_mb": 260, "hook_units": 0},
+      "requires": [],
+      "requires_any": [],
+      "conflicts": []
+    },
+    {
+      "id": "telemetry-relay",
+      "class": "relay",
+      "roles": ["relay"],
+      "raw_payload": false,
+      "supported_os": ["linux"],
+      "supported_runtimes": ["bare_metal", "container_host", "isolated_vm"],
+      "kernel_ranges": [],
+      "overhead": {"cpu_milli": 110, "memory_mb": 140, "hook_units": 0},
+      "requires": [],
+      "requires_any": [],
+      "conflicts": []
+    },
+    {
+      "id": "attestation-seal",
+      "class": "attestation",
+      "roles": ["attestation"],
+      "raw_payload": false,
+      "supported_os": ["linux"],
+      "supported_runtimes": ["bare_metal", "container_host", "isolated_vm"],
+      "kernel_ranges": [],
+      "overhead": {"cpu_milli": 80, "memory_mb": 96, "hook_units": 0},
+      "requires": [],
+      "requires_any": [],
+      "conflicts": []
+    },
+    {
+      "id": "egress-auditor",
+      "class": "observer",
+      "roles": ["audit"],
+      "raw_payload": false,
+      "supported_os": ["linux"],
+      "supported_runtimes": ["bare_metal", "container_host", "isolated_vm"],
+      "kernel_ranges": [],
+      "overhead": {"cpu_milli": 90, "memory_mb": 128, "hook_units": 0},
+      "requires": [],
+      "requires_any": [],
+      "conflicts": []
+    },
+    {
+      "id": "syscall-tap",
+      "class": "observer",
+      "roles": ["kernel_hook"],
+      "raw_payload": false,
+      "supported_os": ["linux"],
+      "supported_runtimes": ["bare_metal", "container_host", "isolated_vm"],
+      "kernel_ranges": [{"min": "5.10.0", "max_exclusive": "6.2.0"}],
+      "overhead": {"cpu_milli": 150, "memory_mb": 140, "hook_units": 4},
+      "requires": [],
+      "requires_any": [],
+      "conflicts": []
+    }
+  ]
+}

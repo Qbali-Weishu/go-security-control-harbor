@@ -1,0 +1,17 @@
+{
+  "profile_id": "regulated-container-host-a",
+  "bundle_name": "regulated-multiaxis-failure",
+  "selected_components": [
+    "kernel-trace-sensor",
+    "inline-blocker",
+    "syscall-tap",
+    "central-collector",
+    "telemetry-relay"
+  ],
+  "data_path": [
+    "kernel-trace-sensor",
+    "central-collector",
+    "telemetry-relay"
+  ],
+  "approvals": []
+}

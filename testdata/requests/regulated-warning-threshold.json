@@ -1,0 +1,21 @@
+{
+  "profile_id": "regulated-container-host-a",
+  "bundle_name": "regulated-warning-threshold",
+  "selected_components": [
+    "kernel-trace-sensor",
+    "inline-blocker",
+    "attestation-seal",
+    "content-sanitizer",
+    "central-collector",
+    "telemetry-relay",
+    "egress-auditor"
+  ],
+  "data_path": [
+    "kernel-trace-sensor",
+    "content-sanitizer",
+    "central-collector",
+    "telemetry-relay",
+    "egress-auditor"
+  ],
+  "approvals": []
+}
