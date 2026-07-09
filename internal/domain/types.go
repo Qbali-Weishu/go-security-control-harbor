@@ -81,26 +81,33 @@ type ProfilesCatalog struct {
 	Profiles []Profile `json:"profiles"`
 }
 
+// FlowPolicy defines the global data-path and budget rules loaded from
+// compatibility_rules.json.
 type FlowPolicy struct {
-	CollectorID         string              `json:"collector_id"`
-	RelayID             string              `json:"relay_id"`
-	SanitizersByState   map[string][]string `json:"sanitizers_by_state"`
-	ProtectedZones      []string            `json:"protected_zones"`
-	WarningUtilization  float64             `json:"warning_utilization"`
+	CollectorID        string              `json:"collector_id"`
+	RelayID            string              `json:"relay_id"`
+	SanitizersByState  map[string][]string `json:"sanitizers_by_state"`
+	ProtectedZones     []string            `json:"protected_zones"`
+	WarningUtilization float64             `json:"warning_utilization"`
+	// Note: auditor_id and auditor_required_fips_modes are defined in the
+	// policy contract but are not yet wired into this struct.
 }
 
 type GlobalRules struct {
 	Flow FlowPolicy `json:"flow"`
 }
 
+// Approval represents a waiver ticket loaded from approval_register.json.
 type Approval struct {
-	TicketID        string    `json:"ticket_id"`
-	RuleCode        string    `json:"rule_code"`
-	Components      []string  `json:"components"`
-	ProfileIDs      []string  `json:"profile_ids"`
-	Zones           []string  `json:"zones"`
-	IncidentStates  []string  `json:"incident_states"`
-	ExpiresAt       time.Time `json:"expires_at"`
+	TicketID       string    `json:"ticket_id"`
+	RuleCode       string    `json:"rule_code"`
+	Components     []string  `json:"components"`
+	ProfileIDs     []string  `json:"profile_ids"`
+	Zones          []string  `json:"zones"`
+	IncidentStates []string  `json:"incident_states"`
+	// fips_modes and egress_modes scope fields are present in the JSON but not
+	// mapped here yet.
+	ExpiresAt time.Time `json:"expires_at"`
 }
 
 type ApprovalsCatalog struct {
@@ -108,11 +115,11 @@ type ApprovalsCatalog struct {
 }
 
 type AssessmentRequest struct {
-	ProfileID           string   `json:"profile_id"`
-	BundleName          string   `json:"bundle_name"`
-	SelectedComponents  []string `json:"selected_components"`
-	DataPath            []string `json:"data_path"`
-	Approvals           []string `json:"approvals"`
+	ProfileID          string   `json:"profile_id"`
+	BundleName         string   `json:"bundle_name"`
+	SelectedComponents []string `json:"selected_components"`
+	DataPath           []string `json:"data_path"`
+	Approvals          []string `json:"approvals"`
 }
 
 type Blocker struct {

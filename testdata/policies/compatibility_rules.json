@@ -10,6 +10,9 @@
       "eradication": ["content-sanitizer"]
     },
     "protected_zones": ["regulated"],
-    "warning_utilization": 0.8
+    "warning_utilization": 0.8,
+    "role_capacity": {
+      "kernel_hook": 3
+    }
   }
 }

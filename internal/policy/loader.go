@@ -9,7 +9,6 @@ import (
 	"compatgate/internal/domain"
 )
 
-// Catalog 包含所有策略数据
 type Catalog struct {
 	Components map[string]domain.Component
 	Profiles   map[string]domain.Profile
@@ -17,7 +16,6 @@ type Catalog struct {
 	Approvals  []domain.Approval
 }
 
-// Load 从指定目录加载策略目录
 func Load(root string) (Catalog, error) {
 	components, err := loadComponents(filepath.Join(root, "component_catalog.json"))
 	if err != nil {
@@ -38,7 +36,6 @@ func Load(root string) (Catalog, error) {
 	return Catalog{Components: components, Profiles: profiles, Rules: rules, Approvals: approvals}, nil
 }
 
-// loadComponents 加载组件目录
 func loadComponents(path string) (map[string]domain.Component, error) {
 	var catalog domain.ComponentsCatalog
 	if err := decode(path, &catalog); err != nil {
@@ -51,7 +48,6 @@ func loadComponents(path string) (map[string]domain.Component, error) {
 	return items, nil
 }
 
-// loadProfiles 加载配置文件目录
 func loadProfiles(path string) (map[string]domain.Profile, error) {
 	var catalog domain.ProfilesCatalog
 	if err := decode(path, &catalog); err != nil {
@@ -64,7 +60,6 @@ func loadProfiles(path string) (map[string]domain.Profile, error) {
 	return items, nil
 }
 
-// loadRules 加载全局规则
 func loadRules(path string) (domain.GlobalRules, error) {
 	var rules domain.GlobalRules
 	if err := decode(path, &rules); err != nil {
@@ -73,7 +68,6 @@ func loadRules(path string) (domain.GlobalRules, error) {
 	return rules, nil
 }
 
-// loadApprovals 加载批准记录
 func loadApprovals(path string) ([]domain.Approval, error) {
 	var catalog domain.ApprovalsCatalog
 	if err := decode(path, &catalog); err != nil {
@@ -82,14 +76,13 @@ func loadApprovals(path string) ([]domain.Approval, error) {
 	return catalog.Approvals, nil
 }
 
-// decode 从文件读取并解析 JSON
 func decode(path string, target any) error {
 	payload, err := os.ReadFile(path)
 	if err != nil {
-		return fmt.Errorf("读取 %s: %w", path, err)
+		return fmt.Errorf("read %s: %w", path, err)
 	}
 	if err := json.Unmarshal(payload, target); err != nil {
-		return fmt.Errorf("解码 %s: %w", path, err)
+		return fmt.Errorf("decode %s: %w", path, err)
 	}
 	return nil
 }

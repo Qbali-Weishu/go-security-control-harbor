@@ -66,6 +66,7 @@ func approvalMatches(approvals []domain.Approval, requested []string, ruleCode, 
 		if _, ok := requestedSet[approval.TicketID]; !ok {
 			continue
 		}
+		// Verify the approval covers exactly the two components in the declared order.
 		if len(approval.Components) != 2 || approval.Components[0] != left || approval.Components[1] != right {
 			continue
 		}
@@ -78,8 +79,9 @@ func approvalMatches(approvals []domain.Approval, requested []string, ruleCode, 
 		if len(approval.IncidentStates) > 0 && !contains(approval.IncidentStates, profile.IncidentState) {
 			continue
 		}
+		// Skip approvals that have already expired.
 		if approval.ExpiresAt.Before(profile.AsOf) {
-			return true
+			continue
 		}
 		return true
 	}

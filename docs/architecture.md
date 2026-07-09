@@ -1,16 +1,16 @@
-# 架构
+# Architecture
 
-## 包
+## Packages
 
-- `internal/policy`: 加载 JSON 策略目录和批准记录。
-- `internal/version`: 用于内核范围检查的语义版本比较。
-- `internal/compat`: 兼容性引擎、预算评估、流检查和豁免逻辑。
-- `internal/api`: HTTP 处理器和请求/响应映射。
-- `internal/domain`: 共享领域类型。
+- `internal/policy`: loads JSON policy catalogs and approval records.
+- `internal/version`: semver-style comparison used for kernel range checks.
+- `internal/compat`: compatibility engine, budget evaluation, flow checks, and waiver logic.
+- `internal/api`: HTTP handlers and request/response mapping.
+- `internal/domain`: shared domain types.
 
-## 执行模型
+## Execution model
 
-1. 启动时加载组件、配置文件、全局规则和批准目录。
-2. 解析请求的配置文件和组件集。
-3. 评估平台支持、条件性需求、冲突、定向流和预算。
-4. 发出稳定的 JSON 响应，阻塞器按代码排序，然后按组件列表排序。
+1. Load component, profile, global rule, and approval catalogs at startup.
+2. Resolve the request profile and component set.
+3. Evaluate platform support, conditional requirements, conflicts, directional flow, and budgets.
+4. Emit a stable JSON response with blockers sorted by code, then by component list.

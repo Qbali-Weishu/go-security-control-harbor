@@ -103,6 +103,19 @@
       "secure_boot": true,
       "budgets": {"cpu_milli": 2000, "memory_mb": 2400, "hook_units": 13},
       "as_of": "2026-07-01T00:00:00Z"
+    },
+    {
+      "id": "capacity-guard-bare-metal-a",
+      "os": "linux",
+      "kernel_version": "5.15.102",
+      "runtime": "bare_metal",
+      "zone": "internal",
+      "egress_mode": "direct",
+      "incident_state": "containment",
+      "fips_mode": "balanced",
+      "secure_boot": false,
+      "budgets": {"cpu_milli": 1600, "memory_mb": 2000, "hook_units": 26},
+      "as_of": "2026-07-01T00:00:00Z"
     }
   ]
 }

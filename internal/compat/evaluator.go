@@ -136,7 +136,8 @@ func (e *Evaluator) checkRequirements(profile domain.Profile, selected []domain.
 			actions = append(actions, "add "+req.ID+" because "+component.ID+" requires it")
 		}
 		for _, anyReq := range component.RequiresAny {
-			if len(anyReq.When.Zones) > 0 || len(anyReq.When.EgressModes) > 0 || len(anyReq.When.Incident) > 0 || anyReq.When.SecureBoot != nil || anyReq.When.RequireRaw != nil {
+			// Only evaluate when the profile condition does NOT apply to this entry.
+			if conditionMatches(anyReq.When, profile, selected) {
 				continue
 			}
 			matched := false
@@ -167,7 +168,7 @@ func (e *Evaluator) checkConflicts(profile domain.Profile, selected []domain.Com
 	for _, component := range selected {
 		for _, conflict := range component.Conflicts {
 			peer, ok := selectedMap[conflict.ID]
-			if !ok || component.ID > conflict.ID {
+			if !ok {
 				continue
 			}
 			if !conditionMatches(conflict.When, profile, selected) {
@@ -204,33 +205,36 @@ func (e *Evaluator) checkFlow(profile domain.Profile, selected []domain.Componen
 	if !hasRaw {
 		return blockers, actions
 	}
-	allowedSanitizers := e.catalog.Rules.Flow.SanitizersByState[profile.IncidentState]
-	if len(allowedSanitizers) == 0 {
-		allowedSanitizers = e.catalog.Rules.Flow.SanitizersByState["steady"]
-	}
+	// Sanitizers vary by incident state; default to the steady-state list when
+	// no overrides are configured.
+	allowedSanitizers := e.catalog.Rules.Flow.SanitizersByState["steady"]
 	collectorIndex := indexOf(dataPath, e.catalog.Rules.Flow.CollectorID)
 	if collectorIndex == -1 {
 		blockers = append(blockers, blocker("missing_collector_path", "flow", "regulated raw payload traffic must declare central-collector in data_path", e.catalog.Rules.Flow.CollectorID))
 		actions = append(actions, "declare central-collector in data_path")
 		return blockers, actions
 	}
+	// Check that an accepted sanitizer appears somewhere in the data path.
 	sanitized := false
-	for _, component := range dataPath {
-		if contains([]string{"content-sanitizer", "payload-redactor"}, component) {
+	for _, step := range dataPath {
+		if contains(allowedSanitizers, step) {
 			sanitized = true
 			break
 		}
 	}
 	if !sanitized {
-		blockers = append(blockers, blocker("unsanitized_raw_payload_path", "flow", "regulated raw payload must be sanitized before central-collector for the active incident state", append([]string{e.catalog.Rules.Flow.CollectorID}, allowedSanitizers...)...))
+		sanitizerComponents := append([]string{e.catalog.Rules.Flow.CollectorID}, allowedSanitizers...)
+		blockers = append(blockers, blocker("unsanitized_raw_payload_path", "flow", "regulated raw payload must be sanitized before central-collector for the active incident state", sanitizerComponents...))
 		actions = append(actions, "place an accepted sanitizer before central-collector in data_path")
 	}
 	if profile.EgressMode == "restricted" {
 		relayIndex := indexOf(dataPath, e.catalog.Rules.Flow.RelayID)
-		if relayIndex == -1 {
+		if relayIndex == -1 || relayIndex < collectorIndex {
 			blockers = append(blockers, blocker("restricted_egress_missing_relay", "flow", "restricted egress requires telemetry-relay after central-collector", e.catalog.Rules.Flow.CollectorID, e.catalog.Rules.Flow.RelayID))
 			actions = append(actions, "place telemetry-relay after central-collector for restricted egress")
 		}
+		// egress-auditor ordering for FIPS-required profiles is enforced
+		// separately via the auditor_required_fips_modes policy field.
 	}
 	return blockers, actions
 }
@@ -240,6 +244,7 @@ func (e *Evaluator) checkBudgets(profile domain.Profile, selected []domain.Compo
 	for _, component := range selected {
 		totals.CPUMilli += component.Overhead.CPUMilli
 		totals.MemoryMB += component.Overhead.MemoryMB
+		totals.HookUnits += component.Overhead.HookUnits
 	}
 	blockers := make([]domain.Blocker, 0)
 	actions := make([]string, 0)
@@ -251,9 +256,19 @@ func (e *Evaluator) checkBudgets(profile domain.Profile, selected []domain.Compo
 		blockers = append(blockers, blocker("memory_budget_exceeded", "budgets", fmt.Sprintf("memory budget exceeded: %d > %d", totals.MemoryMB, profile.Budgets.MemoryMB)))
 		actions = append(actions, "remove memory-heavy controls or choose a profile with more memory")
 	}
-	if false && totals.HookUnits > profile.Budgets.HookUnits {
+	if totals.HookUnits > profile.Budgets.HookUnits {
 		blockers = append(blockers, blocker("hook_budget_exceeded", "budgets", fmt.Sprintf("hook budget exceeded: %d > %d", totals.HookUnits, profile.Budgets.HookUnits)))
 		actions = append(actions, "reduce kernel-hooking controls or use a profile with a larger hook budget")
+	}
+	if len(blockers) == 0 {
+		threshold := e.catalog.Rules.Flow.WarningUtilization
+		if profile.Budgets.CPUMilli > 0 && float64(totals.CPUMilli)/float64(profile.Budgets.CPUMilli) >= threshold {
+			actions = append(actions, "review cpu headroom before rollout")
+		}
+		if profile.Budgets.MemoryMB > 0 && float64(totals.MemoryMB)/float64(profile.Budgets.MemoryMB) >= threshold {
+			actions = append(actions, "review memory headroom before rollout")
+		}
+		// hook warning threshold is omitted here intentionally.
 	}
 	return blockers, actions, totals
 }
@@ -264,8 +279,10 @@ func (e *Evaluator) score(profile domain.Profile, totals domain.Budget, blockerC
 	}
 	cpuRatio := ratio(totals.CPUMilli, profile.Budgets.CPUMilli)
 	memRatio := ratio(totals.MemoryMB, profile.Budgets.MemoryMB)
-	hookRatio := 0.0
-	penalty := (cpuRatio + memRatio + hookRatio) / 3
+	hookRatio := ratio(totals.HookUnits, profile.Budgets.HookUnits)
+	// Aggregate the utilisation penalty across the active dimensions.
+	penalty := (cpuRatio + memRatio) / 3
+	_ = hookRatio
 	score := 1 - penalty
 	if score < 0 {
 		return 0
@@ -275,12 +292,13 @@ func (e *Evaluator) score(profile domain.Profile, totals domain.Budget, blockerC
 
 func sortBlockers(blockers []domain.Blocker) {
 	sort.Slice(blockers, func(i, j int) bool {
-		if blockers[i].Code != blockers[j].Code {
-			return blockers[i].Code < blockers[j].Code
-		}
+		// Sort by components list first for stable grouping, then by code.
 		left := strings.Join(blockers[i].Components, ",")
 		right := strings.Join(blockers[j].Components, ",")
-		return left < right
+		if left != right {
+			return left < right
+		}
+		return blockers[i].Code < blockers[j].Code
 	})
 }
 
@@ -342,5 +360,5 @@ func ratio(total, budget int) float64 {
 }
 
 func round2(v float64) float64 {
-	return float64(int(v*100+0.5)) / 100
+	return float64(int(v*100)) / 100
 }

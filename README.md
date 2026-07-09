@@ -1,28 +1,29 @@
-# 安全控制兼容性网关
+# Security Control Compatibility Gate
 
-此服务评估建议的安全控制包是否可以在托管的 Linux 主机配置文件上部署，而不违反平台、数据路径、豁免或资源约束。
+This service evaluates whether a proposed security control bundle can be deployed on a managed Linux host profile without violating platform, data-path, waiver, or resource constraints.
 
-## 运行时契约
+## Runtime contract
 
-- `GET /healthz` 返回基本的存活文档。
-- `POST /v1/compatibility/assess` 接受包请求并返回确定性的兼容性决策。
-- 策略文件默认从 `testdata/policies/` 加载，如果设置了 `COMPAT_POLICY_ROOT` 则从该路径加载。
+- `GET /healthz` returns a basic liveness document.
+- `POST /v1/compatibility/assess` accepts a bundle request and returns a deterministic compatibility decision.
+- Policy files are loaded from `testdata/policies/` by default, or from `COMPAT_POLICY_ROOT` if it is set.
 
-## 本地运行
+## Local run
 
 ```bash
 go run ./cmd/compatibilityd
 ```
 
-服务器运行后，使用环境中可用的 HTTP 客户端提交 `testdata/requests/` 下的任何 JSON 请求。
+Once the server is running, submit any JSON request under `testdata/requests/`
+with an HTTP client available in your environment.
 
-## 关键工程约束
+## Key engineering constraint
 
-评估器必须同时跨多个维度进行推理：
+The evaluator must reason across multiple axes at once:
 
-- 平台支持：OS、运行时、内核范围
-- 前提闭包：直接和条件性需求
-- 受监管区域中的定向数据流安全
-- 带工单范围豁免的冲突处理
-- CPU、内存和钩子预算总和
-- 下游审计员的确定性跟踪输出
+- platform support: OS, runtime, kernel range
+- prerequisite closure: direct and conditional requirements
+- directional data-flow safety in regulated zones
+- conflict handling with ticket-scoped waivers
+- summed CPU, memory, and hook budgets
+- deterministic trace output for downstream auditors
