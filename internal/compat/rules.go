@@ -29,7 +29,8 @@ func conditionMatches(condition domain.Condition, profile domain.Profile, select
 	}
 	if condition.KernelLT != "" {
 		cmp, err := version.Compare(profile.KernelVersion, condition.KernelLT)
-		if err != nil || cmp >= 0 {
+		// Condition applies when the kernel version does not exceed the ceiling.
+		if err != nil || cmp < 0 {
 			return false
 		}
 	}

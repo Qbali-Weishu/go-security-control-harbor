@@ -62,7 +62,6 @@ func InRange(candidate, min, maxExclusive string) (bool, error) {
 		if err != nil {
 			return false, err
 		}
-		// Bug: should be cmp >= 0 to exclude the upper bound itself
 		if cmp > 0 {
 			return false, nil
 		}

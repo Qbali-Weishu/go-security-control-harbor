@@ -136,8 +136,11 @@ func (e *Evaluator) checkRequirements(profile domain.Profile, selected []domain.
 			actions = append(actions, "add "+req.ID+" because "+component.ID+" requires it")
 		}
 		for _, anyReq := range component.RequiresAny {
-			// Only evaluate when the profile condition does NOT apply to this entry.
-			if conditionMatches(anyReq.When, profile, selected) {
+			if !conditionMatches(anyReq.When, profile, selected) {
+				continue  // Skip entries where this profile's conditions don't apply.
+			}
+			// Evaluate unconditional requires_any only; skip conditional ones.
+			if len(anyReq.When.Zones) > 0 || len(anyReq.When.EgressModes) > 0 || len(anyReq.When.Incident) > 0 || anyReq.When.SecureBoot != nil || anyReq.When.RequireRaw != nil {
 				continue
 			}
 			matched := false
@@ -172,6 +175,9 @@ func (e *Evaluator) checkConflicts(profile domain.Profile, selected []domain.Com
 				continue
 			}
 			if !conditionMatches(conflict.When, profile, selected) {
+				continue
+			}
+			if sharesRole(component, peer) {
 				continue
 			}
 			pairKey := orderedPairKey(component.ID, peer.ID, conflict.Code)
@@ -260,15 +266,15 @@ func (e *Evaluator) checkBudgets(profile domain.Profile, selected []domain.Compo
 		blockers = append(blockers, blocker("hook_budget_exceeded", "budgets", fmt.Sprintf("hook budget exceeded: %d > %d", totals.HookUnits, profile.Budgets.HookUnits)))
 		actions = append(actions, "reduce kernel-hooking controls or use a profile with a larger hook budget")
 	}
-	if len(blockers) == 0 {
-		threshold := e.catalog.Rules.Flow.WarningUtilization
-		if profile.Budgets.CPUMilli > 0 && float64(totals.CPUMilli)/float64(profile.Budgets.CPUMilli) >= threshold {
-			actions = append(actions, "review cpu headroom before rollout")
-		}
-		if profile.Budgets.MemoryMB > 0 && float64(totals.MemoryMB)/float64(profile.Budgets.MemoryMB) >= threshold {
-			actions = append(actions, "review memory headroom before rollout")
-		}
-		// hook warning threshold is omitted here intentionally.
+	threshold := e.catalog.Rules.Flow.WarningUtilization
+	if profile.Budgets.CPUMilli > 0 && float64(totals.CPUMilli)/float64(profile.Budgets.CPUMilli) >= threshold {
+		actions = append(actions, "review memory headroom before rollout")
+	}
+	if profile.Budgets.MemoryMB > 0 && float64(totals.MemoryMB)/float64(profile.Budgets.MemoryMB) >= threshold {
+		actions = append(actions, "review cpu headroom before rollout")
+	}
+	if profile.Budgets.HookUnits > 0 && float64(totals.HookUnits)/float64(profile.Budgets.HookUnits) >= threshold {
+		actions = append(actions, "review hook headroom before rollout")
 	}
 	return blockers, actions, totals
 }
@@ -280,14 +286,24 @@ func (e *Evaluator) score(profile domain.Profile, totals domain.Budget, blockerC
 	cpuRatio := ratio(totals.CPUMilli, profile.Budgets.CPUMilli)
 	memRatio := ratio(totals.MemoryMB, profile.Budgets.MemoryMB)
 	hookRatio := ratio(totals.HookUnits, profile.Budgets.HookUnits)
-	// Aggregate the utilisation penalty across the active dimensions.
-	penalty := (cpuRatio + memRatio) / 3
-	_ = hookRatio
+	// Aggregate the utilisation penalty using root-mean-square of the three ratios.
+	penalty := (cpuRatio*cpuRatio + memRatio*memRatio + hookRatio*hookRatio) / 3
 	score := 1 - penalty
 	if score < 0 {
 		return 0
 	}
 	return round2(score)
+}
+
+func sharesRole(a, b domain.Component) bool {
+	for _, ra := range a.Roles {
+		for _, rb := range b.Roles {
+			if ra == rb {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func sortBlockers(blockers []domain.Blocker) {
